@@ -1,30 +1,75 @@
-import bridges.base.Edge;
 import bridges.base.GraphAdjList;
-import bridges.base.GraphAdjMatrix;
-import bridges.base.LinkVisualizer;
 import bridges.connect.Bridges;
-import bridges.data_src_dependent.OsmVertex;
 import bridges.validation.RateLimitException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.text.DecimalFormat;
+import java.util.*;
 import java.io.FileNotFoundException;
 import java.io.File;
 import java.util.regex.*;
 
-import static java.lang.Integer.lowestOneBit;
-import static java.lang.Integer.parseInt;
 
 public class Main {
+    public static double[][] distanceMatrix = new double[48][48];
+    public static GraphAdjList<String, Integer, Double> graph = new GraphAdjList<>();
+    public static String[] cities = new String[distanceMatrix.length];
+
+
+    public static List<Integer> findIntermediatePoints(int startPoint, int endPoint) {
+        List<Integer> intermediatePoints = new ArrayList<>();
+
+        for (int intermediateVertex = 0; intermediateVertex < distanceMatrix.length; intermediateVertex++) {
+            DecimalFormat df = new DecimalFormat("#.###");
+
+            double distanceThroughIntermediate = Double.parseDouble(df.format(distanceMatrix[startPoint][intermediateVertex] + distanceMatrix[intermediateVertex][endPoint]));
+
+            if (distanceThroughIntermediate == distanceMatrix[startPoint][endPoint]) {
+                intermediatePoints.add(intermediateVertex);
+            }
+        }
+
+        return intermediatePoints;
+    }
+
+//    public static ArrayList<Integer> findIntermediatePoints(double[][] graph, int x, int y) {
+//        double target = graph[x][y];
+//        ArrayList<Integer> intermediatePoints = new ArrayList<>();
+//        DecimalFormat df = new DecimalFormat("#.####");
+//        df.setRoundingMode(RoundingMode.CEILING);
+//        int k = x;
+//        while (k != y && k > 0) {
+//            for (int kMinusOne = k-1; kMinusOne > 0; kMinusOne--) {
+//                double result = Double.parseDouble(df.format((graph[kMinusOne][y]-graph[x][kMinusOne])));
+//
+//                if (result == target) {
+//                    intermediatePoints.add(k);
+//                    k = kMinusOne;
+//                    break;
+//                }
+//            }
+//        }
+//        return intermediatePoints;
+//    }
+
     public static void main(String[] args) throws RateLimitException, IOException {
         Bridges bridges = new Bridges(19,"duckydee","348122572003");
         bridges.setCoordSystemType("albersusa");
         bridges.setMapOverlay(true);
-        GraphAdjList<String, String, Double> graph = new GraphAdjList<>();
 
+
+        for (int k=0;k<distanceMatrix.length;k++) {
+            for (int i = 0; i < distanceMatrix.length; i++) {
+                if (k == i){
+                    distanceMatrix[k][i] = 0.0;
+                }else{
+                    distanceMatrix[k][i] = Double.MAX_VALUE;
+                }
+
+            }
+        }
+
+        int counter = 0;
         //Step 1: Get the data points from the file
         try{
             File file = new File("src/graph_us_cities.txt");
@@ -37,13 +82,18 @@ public class Main {
                     try {
                         Double.parseDouble(matcher.group(2));
                         //City
-                        graph.addVertex(matcher.group(1), matcher.group(1));
+                        cities[counter] = matcher.group(1);
+                        graph.addVertex(matcher.group(1), counter);
                         graph.getVertex(matcher.group(1)).setLocation(Double.parseDouble(matcher.group(3)), Double.parseDouble(matcher.group(2)));
                         graph.getVertex(matcher.group(1)).setLabel(matcher.group(1));
+                        graph.getVertex(matcher.group(1)).setSize(1.0f);
+                        counter++;
                     } catch (NumberFormatException e) {
                         //Path
                         graph.addEdge(matcher.group(1), matcher.group(2), Double.valueOf(matcher.group(3)));
                         graph.getLinkVisualizer(matcher.group(1),matcher.group(2)).setLabel(String.valueOf(Double.valueOf(matcher.group(3))));
+                        graph.getLinkVisualizer(matcher.group(1),matcher.group(2)).setThickness(1.0f);
+                        distanceMatrix[graph.getVertexData(matcher.group(1))][graph.getVertexData(matcher.group(2))] = Double.parseDouble(matcher.group(3));
                     }
                 }
             }
@@ -53,31 +103,49 @@ public class Main {
         }
 
         //Task 2: Implement the Algorithm
-        GraphAdjMatrix<String, String, Double> ShortestPath = new GraphAdjMatrix<>();
-        for (String point : graph.getVertices().keySet()) {
-            for (Edge<String, Double> edge : graph.getAdjacencyList(point)) {
-                ShortestPath.addEdge(edge.getFrom(),edge.getTo(),edge.getEdgeData().intValue());
+        DecimalFormat df = new DecimalFormat("#.###");
+        for (int k=0;k<distanceMatrix.length;k++) {
+            for (int i=0;i<distanceMatrix.length;i++) {
+                for (int j=0;j<distanceMatrix.length;j++) {
+                    if (distanceMatrix[i][k] + distanceMatrix[k][j] < distanceMatrix[i][j]) {
+                        distanceMatrix[i][j] = Double.parseDouble(df.format(distanceMatrix[i][k] + distanceMatrix[k][j]));
+                    }
+                }
             }
         }
 
 
+        //Task 3: Get the shortest path
 
-        for (String k : graph.getVertices().keySet()){
-            for (String i : graph.getVertices().keySet()){
-                for (String j : graph.getVertices().keySet()) {
-                    try {
-                        ShortestPath.setEdgeData(i, j,
-                            Math.min(ShortestPath.getEdgeData(i, j),
-                            (ShortestPath.getEdgeData(i, k) + ShortestPath.getEdgeData(k, j))));
-                    } catch (NullPointerException e) {
+        int startCity = 3;
+        String[] searchedCities = new String[]{"Wichita_KS"};
 
+        for (String x :searchedCities) {
+            for (int y=0;y<cities.length;y++){
+                if (Objects.equals(cities[y], x)){
+                    List<Integer> path = findIntermediatePoints(startCity, y);
+                    for (int z = 0; z <path.size()-1; z++){
+                        graph.getVertex(cities[path.get(z)]).setColor("red");
+                        graph.getVertex(cities[path.get(z)]).setSize(3.0);
+                        graph.getVertex(cities[path.get(z +1)]).setColor("red");
+                        graph.getVertex(cities[path.get(z +1)]).setSize(3.0);
+
+
+                        graph.addEdge(cities[path.get(z)],cities[path.get(z +1)],distanceMatrix[path.get(z)][path.get(z +1)]);
+                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z +1)]).setColor("red");
+                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z +1)]).setThickness(3.0);
                     }
+                    graph.getVertex(cities[path.getLast()]).setColor("green");
+                    graph.getVertex(cities[path.getLast()]).setSize(5.0);
+                    graph.getVertex(cities[path.getFirst()]).setSize(5.0);
+                    break;
                 }
             }
 
         }
 
-        bridges.setDataStructure(ShortestPath);
+
+        bridges.setDataStructure(graph);
         bridges.visualize();
 
     }

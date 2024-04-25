@@ -57,7 +57,7 @@ public class Main {
         bridges.setCoordSystemType("albersusa");
         bridges.setMapOverlay(true);
 
-
+        //Initalise the Distance Matrix
         for (int k=0;k<distanceMatrix.length;k++) {
             for (int i = 0; i < distanceMatrix.length; i++) {
                 if (k == i){
@@ -65,9 +65,19 @@ public class Main {
                 }else{
                     distanceMatrix[k][i] = Double.MAX_VALUE;
                 }
-
             }
         }
+
+        //Initalise the Pathing Matrix
+        int[][] Next = new int[distanceMatrix.length][distanceMatrix.length];
+        for (int k=0;k<distanceMatrix.length;k++) {
+            for (int i = 0; i < distanceMatrix.length; i++) {
+                Next[i][k] = -1;
+            }
+
+        }
+
+
 
         int counter = 0;
         //Step 1: Get the data points from the file
@@ -94,6 +104,8 @@ public class Main {
                         graph.getLinkVisualizer(matcher.group(1),matcher.group(2)).setLabel(String.valueOf(Double.valueOf(matcher.group(3))));
                         graph.getLinkVisualizer(matcher.group(1),matcher.group(2)).setThickness(1.0f);
                         distanceMatrix[graph.getVertexData(matcher.group(1))][graph.getVertexData(matcher.group(2))] = Double.parseDouble(matcher.group(3));
+                        Next[graph.getVertexData(matcher.group(1))][graph.getVertexData(matcher.group(2))] = graph.getVertexData(matcher.group(2));
+
                     }
                 }
             }
@@ -103,12 +115,15 @@ public class Main {
         }
 
         //Task 2: Implement the Algorithm
+        //Use extra matrices, use to plot the paths
+
         DecimalFormat df = new DecimalFormat("#.###");
         for (int k=0;k<distanceMatrix.length;k++) {
             for (int i=0;i<distanceMatrix.length;i++) {
                 for (int j=0;j<distanceMatrix.length;j++) {
                     if (distanceMatrix[i][k] + distanceMatrix[k][j] < distanceMatrix[i][j]) {
                         distanceMatrix[i][j] = Double.parseDouble(df.format(distanceMatrix[i][k] + distanceMatrix[k][j]));
+                        Next[i][j] = Next[i][k];
                     }
                 }
             }
@@ -116,27 +131,39 @@ public class Main {
 
 
         //Task 3: Get the shortest path
-
         int startCity = 3;
-        String[] searchedCities = new String[]{"Wichita_KS"};
+        String[] searchedCities = new String[]{"Wichita_KS","Minneapolis_MN","Jacksonville_FL"};
 
         for (String x :searchedCities) {
             for (int y=0;y<cities.length;y++){
                 if (Objects.equals(cities[y], x)){
-                    List<Integer> path = findIntermediatePoints(startCity, y);
+                    //Find the Path
+                    ArrayList<Integer> path = new ArrayList<>();
+                    path.add(startCity);
+                    int u = startCity;
+                    while(u!= y){
+                        u = Next[u][y];
+                        path.add(u);
+                    }
+
+                    //Visualize the path
+                    double cost = 0.0;
                     for (int z = 0; z <path.size()-1; z++){
                         graph.getVertex(cities[path.get(z)]).setColor("red");
                         graph.getVertex(cities[path.get(z)]).setSize(3.0);
-                        graph.getVertex(cities[path.get(z +1)]).setColor("red");
-                        graph.getVertex(cities[path.get(z +1)]).setSize(3.0);
+                        graph.getVertex(cities[path.get(z+1)]).setColor("red");
+                        graph.getVertex(cities[path.get(z+1)]).setSize(3.0);
 
 
-                        graph.addEdge(cities[path.get(z)],cities[path.get(z +1)],distanceMatrix[path.get(z)][path.get(z +1)]);
-                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z +1)]).setColor("red");
-                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z +1)]).setThickness(3.0);
+                        graph.addEdge(cities[path.get(z)],cities[path.get(z+1)],distanceMatrix[path.get(z)][path.get(z +1)]);
+                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z+1)]).setColor("red");
+                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z+1)]).setThickness(3.0);
+                        cost += graph.getEdgeData(cities[path.get(z)],cities[path.get(z+1)]);
                     }
+                    //Visualize the end and start nodes
                     graph.getVertex(cities[path.getLast()]).setColor("green");
                     graph.getVertex(cities[path.getLast()]).setSize(5.0);
+                    graph.getVertex(cities[path.getLast()]).setLabel(cities[path.getFirst()]+" to "+cities[path.getLast()] + ": "+df.format(cost));
                     graph.getVertex(cities[path.getFirst()]).setSize(5.0);
                     break;
                 }

@@ -150,21 +150,19 @@ public class Main {
                     double cost = 0.0;
                     for (int z = 0; z <path.size()-1; z++){
                         graph.getVertex(cities[path.get(z)]).setColor("red");
-                        graph.getVertex(cities[path.get(z)]).setSize(3.0);
+                        graph.getVertex(cities[path.get(z)]).setSize(3.0f);
                         graph.getVertex(cities[path.get(z+1)]).setColor("red");
-                        graph.getVertex(cities[path.get(z+1)]).setSize(3.0);
+                        graph.getVertex(cities[path.get(z+1)]).setSize(3.0f);
 
-
-                        graph.addEdge(cities[path.get(z)],cities[path.get(z+1)],distanceMatrix[path.get(z)][path.get(z +1)]);
                         graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z+1)]).setColor("red");
-                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z+1)]).setThickness(3.0);
+                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z+1)]).setThickness(3.0f);
                         cost += graph.getEdgeData(cities[path.get(z)],cities[path.get(z+1)]);
                     }
                     //Visualize the end and start nodes
                     graph.getVertex(cities[path.getLast()]).setColor("green");
-                    graph.getVertex(cities[path.getLast()]).setSize(5.0);
+                    graph.getVertex(cities[path.getLast()]).setSize(5.0f);
                     graph.getVertex(cities[path.getLast()]).setLabel(cities[path.getFirst()]+" to "+cities[path.getLast()] + ": "+df.format(cost));
-                    graph.getVertex(cities[path.getFirst()]).setSize(5.0);
+                    graph.getVertex(cities[path.getFirst()]).setSize(5.0f);
                     break;
                 }
             }

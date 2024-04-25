@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="458b33e9-760a-4b13-9dba-9784da9aa026" name="Changes" comment="Working on displaying the paths">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="458b33e9-760a-4b13-9dba-9784da9aa026" name="Changes" comment="Just about finished, just stylizing and visualizing">
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -51,6 +50,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
+    "last.edited.regexp": "Sample Text",
     "last_opened_file_path": "C:/Users/dee garrin/Downloads/bridges-java-3.4.2.jar",
     "project.structure.last.edited": "Modules",
     "project.structure.proportion": "0.0",
@@ -117,7 +117,15 @@
       <option name="project" value="LOCAL" />
       <updated>1714002411238</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Just about finished, just stylizing and visualizing">
+      <option name="closed" value="true" />
+      <created>1714061373400</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1714061373400</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -125,7 +133,8 @@
     <MESSAGE value="Working on implementing the data from text file to points on the graph" />
     <MESSAGE value="Working on implementation of the Algorithm" />
     <MESSAGE value="Working on displaying the paths" />
-    <option name="LAST_COMMIT_MESSAGE" value="Working on displaying the paths" />
+    <MESSAGE value="Just about finished, just stylizing and visualizing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Just about finished, just stylizing and visualizing" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

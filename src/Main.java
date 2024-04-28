@@ -15,43 +15,6 @@ public class Main {
     public static GraphAdjList<String, Integer, Double> graph = new GraphAdjList<>();
     public static String[] cities = new String[distanceMatrix.length];
 
-
-    public static List<Integer> findIntermediatePoints(int startPoint, int endPoint) {
-        List<Integer> intermediatePoints = new ArrayList<>();
-
-        for (int intermediateVertex = 0; intermediateVertex < distanceMatrix.length; intermediateVertex++) {
-            DecimalFormat df = new DecimalFormat("#.###");
-
-            double distanceThroughIntermediate = Double.parseDouble(df.format(distanceMatrix[startPoint][intermediateVertex] + distanceMatrix[intermediateVertex][endPoint]));
-
-            if (distanceThroughIntermediate == distanceMatrix[startPoint][endPoint]) {
-                intermediatePoints.add(intermediateVertex);
-            }
-        }
-
-        return intermediatePoints;
-    }
-
-//    public static ArrayList<Integer> findIntermediatePoints(double[][] graph, int x, int y) {
-//        double target = graph[x][y];
-//        ArrayList<Integer> intermediatePoints = new ArrayList<>();
-//        DecimalFormat df = new DecimalFormat("#.####");
-//        df.setRoundingMode(RoundingMode.CEILING);
-//        int k = x;
-//        while (k != y && k > 0) {
-//            for (int kMinusOne = k-1; kMinusOne > 0; kMinusOne--) {
-//                double result = Double.parseDouble(df.format((graph[kMinusOne][y]-graph[x][kMinusOne])));
-//
-//                if (result == target) {
-//                    intermediatePoints.add(k);
-//                    k = kMinusOne;
-//                    break;
-//                }
-//            }
-//        }
-//        return intermediatePoints;
-//    }
-
     public static void main(String[] args) throws RateLimitException, IOException {
         Bridges bridges = new Bridges(19,"duckydee","348122572003");
         bridges.setCoordSystemType("albersusa");
@@ -74,10 +37,7 @@ public class Main {
             for (int i = 0; i < distanceMatrix.length; i++) {
                 Next[i][k] = -1;
             }
-
         }
-
-
 
         int counter = 0;
         //Step 1: Get the data points from the file

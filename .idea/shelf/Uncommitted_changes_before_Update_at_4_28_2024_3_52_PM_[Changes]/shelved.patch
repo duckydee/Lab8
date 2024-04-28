@@ -1,0 +1,195 @@
+Index: src/Main.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import bridges.base.GraphAdjList;\r\nimport bridges.connect.Bridges;\r\nimport bridges.validation.RateLimitException;\r\n\r\nimport java.io.IOException;\r\nimport java.text.DecimalFormat;\r\nimport java.util.*;\r\nimport java.io.FileNotFoundException;\r\nimport java.io.File;\r\nimport java.util.regex.*;\r\n\r\n\r\npublic class Main {\r\n    public static double[][] distanceMatrix = new double[48][48];\r\n    public static GraphAdjList<String, Integer, Double> graph = new GraphAdjList<>();\r\n    public static String[] cities = new String[distanceMatrix.length];\r\n\r\n\r\n    public static List<Integer> findIntermediatePoints(int startPoint, int endPoint) {\r\n        List<Integer> intermediatePoints = new ArrayList<>();\r\n\r\n        for (int intermediateVertex = 0; intermediateVertex < distanceMatrix.length; intermediateVertex++) {\r\n            DecimalFormat df = new DecimalFormat(\"#.###\");\r\n\r\n            double distanceThroughIntermediate = Double.parseDouble(df.format(distanceMatrix[startPoint][intermediateVertex] + distanceMatrix[intermediateVertex][endPoint]));\r\n\r\n            if (distanceThroughIntermediate == distanceMatrix[startPoint][endPoint]) {\r\n                intermediatePoints.add(intermediateVertex);\r\n            }\r\n        }\r\n\r\n        return intermediatePoints;\r\n    }\r\n\r\n//    public static ArrayList<Integer> findIntermediatePoints(double[][] graph, int x, int y) {\r\n//        double target = graph[x][y];\r\n//        ArrayList<Integer> intermediatePoints = new ArrayList<>();\r\n//        DecimalFormat df = new DecimalFormat(\"#.####\");\r\n//        df.setRoundingMode(RoundingMode.CEILING);\r\n//        int k = x;\r\n//        while (k != y && k > 0) {\r\n//            for (int kMinusOne = k-1; kMinusOne > 0; kMinusOne--) {\r\n//                double result = Double.parseDouble(df.format((graph[kMinusOne][y]-graph[x][kMinusOne])));\r\n//\r\n//                if (result == target) {\r\n//                    intermediatePoints.add(k);\r\n//                    k = kMinusOne;\r\n//                    break;\r\n//                }\r\n//            }\r\n//        }\r\n//        return intermediatePoints;\r\n//    }\r\n\r\n    public static void main(String[] args) throws RateLimitException, IOException {\r\n        Bridges bridges = new Bridges(19,\"duckydee\",\"348122572003\");\r\n        bridges.setCoordSystemType(\"albersusa\");\r\n        bridges.setMapOverlay(true);\r\n\r\n\r\n        for (int k=0;k<distanceMatrix.length;k++) {\r\n            for (int i = 0; i < distanceMatrix.length; i++) {\r\n                if (k == i){\r\n                    distanceMatrix[k][i] = 0.0;\r\n                }else{\r\n                    distanceMatrix[k][i] = Double.MAX_VALUE;\r\n                }\r\n\r\n            }\r\n        }\r\n\r\n        int counter = 0;\r\n        //Step 1: Get the data points from the file\r\n        try{\r\n            File file = new File(\"src/graph_us_cities.txt\");\r\n            Scanner myReader = new Scanner(file);\r\n            Pattern pattern = Pattern.compile(\"\\t(.*?)  (.*?)  (.*?)$\");\r\n            while (myReader.hasNextLine()){\r\n                String data = myReader.nextLine();\r\n                Matcher matcher = pattern.matcher(data);\r\n                if (matcher.find()) {\r\n                    try {\r\n                        Double.parseDouble(matcher.group(2));\r\n                        //City\r\n                        cities[counter] = matcher.group(1);\r\n                        graph.addVertex(matcher.group(1), counter);\r\n                        graph.getVertex(matcher.group(1)).setLocation(Double.parseDouble(matcher.group(3)), Double.parseDouble(matcher.group(2)));\r\n                        graph.getVertex(matcher.group(1)).setLabel(matcher.group(1));\r\n                        graph.getVertex(matcher.group(1)).setSize(1.0f);\r\n                        counter++;\r\n                    } catch (NumberFormatException e) {\r\n                        //Path\r\n                        graph.addEdge(matcher.group(1), matcher.group(2), Double.valueOf(matcher.group(3)));\r\n                        graph.getLinkVisualizer(matcher.group(1),matcher.group(2)).setLabel(String.valueOf(Double.valueOf(matcher.group(3))));\r\n                        graph.getLinkVisualizer(matcher.group(1),matcher.group(2)).setThickness(1.0f);\r\n                        distanceMatrix[graph.getVertexData(matcher.group(1))][graph.getVertexData(matcher.group(2))] = Double.parseDouble(matcher.group(3));\r\n                    }\r\n                }\r\n            }\r\n        }catch (FileNotFoundException e){\r\n            System.out.println(\"An error occurred.\");\r\n            e.printStackTrace();\r\n        }\r\n\r\n        //Task 2: Implement the Algorithm\r\n        DecimalFormat df = new DecimalFormat(\"#.###\");\r\n        for (int k=0;k<distanceMatrix.length;k++) {\r\n            for (int i=0;i<distanceMatrix.length;i++) {\r\n                for (int j=0;j<distanceMatrix.length;j++) {\r\n                    if (distanceMatrix[i][k] + distanceMatrix[k][j] < distanceMatrix[i][j]) {\r\n                        distanceMatrix[i][j] = Double.parseDouble(df.format(distanceMatrix[i][k] + distanceMatrix[k][j]));\r\n                    }\r\n                }\r\n            }\r\n        }\r\n\r\n\r\n        //Task 3: Get the shortest path\r\n\r\n        int startCity = 3;\r\n        String[] searchedCities = new String[]{\"Wichita_KS\"};\r\n\r\n        for (String x :searchedCities) {\r\n            for (int y=0;y<cities.length;y++){\r\n                if (Objects.equals(cities[y], x)){\r\n                    List<Integer> path = findIntermediatePoints(startCity, y);\r\n                    for (int z = 0; z <path.size()-1; z++){\r\n                        graph.getVertex(cities[path.get(z)]).setColor(\"red\");\r\n                        graph.getVertex(cities[path.get(z)]).setSize(3.0);\r\n                        graph.getVertex(cities[path.get(z +1)]).setColor(\"red\");\r\n                        graph.getVertex(cities[path.get(z +1)]).setSize(3.0);\r\n\r\n\r\n                        graph.addEdge(cities[path.get(z)],cities[path.get(z +1)],distanceMatrix[path.get(z)][path.get(z +1)]);\r\n                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z +1)]).setColor(\"red\");\r\n                        graph.getLinkVisualizer(cities[path.get(z)],cities[path.get(z +1)]).setThickness(3.0);\r\n                    }\r\n                    graph.getVertex(cities[path.getLast()]).setColor(\"green\");\r\n                    graph.getVertex(cities[path.getLast()]).setSize(5.0);\r\n                    graph.getVertex(cities[path.getFirst()]).setSize(5.0);\r\n                    break;\r\n                }\r\n            }\r\n\r\n        }\r\n\r\n\r\n        bridges.setDataStructure(graph);\r\n        bridges.visualize();\r\n\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/Main.java b/src/Main.java
+--- a/src/Main.java	(revision 888e8839e5d3c2e876bf3e00a2c15db29586daf8)
++++ b/src/Main.java	(date 1714333920003)
+@@ -32,26 +32,6 @@
+         return intermediatePoints;
+     }
+ 
+-//    public static ArrayList<Integer> findIntermediatePoints(double[][] graph, int x, int y) {
+-//        double target = graph[x][y];
+-//        ArrayList<Integer> intermediatePoints = new ArrayList<>();
+-//        DecimalFormat df = new DecimalFormat("#.####");
+-//        df.setRoundingMode(RoundingMode.CEILING);
+-//        int k = x;
+-//        while (k != y && k > 0) {
+-//            for (int kMinusOne = k-1; kMinusOne > 0; kMinusOne--) {
+-//                double result = Double.parseDouble(df.format((graph[kMinusOne][y]-graph[x][kMinusOne])));
+-//
+-//                if (result == target) {
+-//                    intermediatePoints.add(k);
+-//                    k = kMinusOne;
+-//                    break;
+-//                }
+-//            }
+-//        }
+-//        return intermediatePoints;
+-//    }
+-
+     public static void main(String[] args) throws RateLimitException, IOException {
+         Bridges bridges = new Bridges(19,"duckydee","348122572003");
+         bridges.setCoordSystemType("albersusa");
+@@ -117,7 +97,7 @@
+ 
+         //Task 3: Get the shortest path
+ 
+-        int startCity = 3;
++        int startCity = 4;
+         String[] searchedCities = new String[]{"Wichita_KS"};
+ 
+         for (String x :searchedCities) {
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"458b33e9-760a-4b13-9dba-9784da9aa026\" name=\"Changes\" comment=\"Working on displaying the paths\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/src/Main.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/Main.java\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Class\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\"><![CDATA[{\r\n  \"lastFilter\": {\r\n    \"state\": \"OPEN\",\r\n    \"assignee\": \"duckydee\"\r\n  }\r\n}]]></component>\r\n  <component name=\"GithubPullRequestsUISettings\"><![CDATA[{\r\n  \"selectedUrlAndAccountId\": {\r\n    \"url\": \"https://github.com/duckydee/Lab8.git\",\r\n    \"accountId\": \"957e6050-d2b6-4279-a138-901dec1ec70c\"\r\n  }\r\n}]]></component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 3\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2fVYrP4BR1gP7XOLZPune1I1vOj\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"Application.Main.executor\": \"Run\",\r\n    \"RunOnceActivity.OpenProjectViewOnStart\": \"true\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"git-widget-placeholder\": \"main\",\r\n    \"kotlin-language-version-configured\": \"true\",\r\n    \"last_opened_file_path\": \"C:/Users/dee garrin/Downloads/bridges-java-3.4.2.jar\",\r\n    \"project.structure.last.edited\": \"Modules\",\r\n    \"project.structure.proportion\": \"0.0\",\r\n    \"project.structure.side.proportion\": \"0.0\"\r\n  }\r\n}]]></component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"$PROJECT_DIR$/src\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"RunManager\">\r\n    <configuration name=\"Main\" type=\"Application\" factoryName=\"Application\" temporary=\"true\" nameIsGenerated=\"true\">\r\n      <option name=\"MAIN_CLASS_NAME\" value=\"Main\" />\r\n      <module name=\"Lab8\" />\r\n      <method v=\"2\">\r\n        <option name=\"Make\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <recent_temporary>\r\n      <list>\r\n        <item itemvalue=\"Application.Main\" />\r\n      </list>\r\n    </recent_temporary>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"458b33e9-760a-4b13-9dba-9784da9aa026\" name=\"Changes\" comment=\"\" />\r\n      <created>1713887910566</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1713887910566</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"Initial Commit\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1713888017816</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1713888017816</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Working on implementing the data from text file to points on the graph\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1713890550352</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1713890550352</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"Working on implementation of the Algorithm\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1713988106958</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1713988106958</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00004\" summary=\"Working on displaying the paths\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1714002411238</created>\r\n      <option name=\"number\" value=\"00004\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1714002411238</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"5\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"Initial Commit\" />\r\n    <MESSAGE value=\"Working on implementing the data from text file to points on the graph\" />\r\n    <MESSAGE value=\"Working on implementation of the Algorithm\" />\r\n    <MESSAGE value=\"Working on displaying the paths\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Working on displaying the paths\" />\r\n  </component>\r\n  <component name=\"XDebuggerManager\">\r\n    <breakpoint-manager>\r\n      <breakpoints>\r\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\r\n          <url>file://$PROJECT_DIR$/src/Main.java</url>\r\n          <line>163</line>\r\n          <option name=\"timeStamp\" value=\"21\" />\r\n        </line-breakpoint>\r\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\r\n          <url>file://$PROJECT_DIR$/src/Main.java</url>\r\n          <line>20</line>\r\n          <option name=\"timeStamp\" value=\"44\" />\r\n        </line-breakpoint>\r\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\r\n          <url>file://$PROJECT_DIR$/src/Main.java</url>\r\n          <line>141</line>\r\n          <option name=\"timeStamp\" value=\"48\" />\r\n        </line-breakpoint>\r\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\r\n          <url>file://$PROJECT_DIR$/src/Main.java</url>\r\n          <line>153</line>\r\n          <option name=\"timeStamp\" value=\"49\" />\r\n        </line-breakpoint>\r\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\r\n          <url>file://$PROJECT_DIR$/src/Main.java</url>\r\n          <line>32</line>\r\n          <option name=\"timeStamp\" value=\"50\" />\r\n        </line-breakpoint>\r\n        <breakpoint enabled=\"true\" type=\"java-exception\">\r\n          <properties class=\"java.lang.NullPointerException\" package=\"java.lang\" />\r\n          <option name=\"timeStamp\" value=\"31\" />\r\n        </breakpoint>\r\n        <breakpoint enabled=\"true\" type=\"java-exception\">\r\n          <properties class=\"java.util.NoSuchElementException\" package=\"java.util\" />\r\n          <option name=\"timeStamp\" value=\"38\" />\r\n        </breakpoint>\r\n        <line-breakpoint enabled=\"true\" type=\"java-method\">\r\n          <url>file://$PROJECT_DIR$/src/Main.java</url>\r\n          <line>19</line>\r\n          <properties class=\"Main\" method=\"findIntermediatePoints\">\r\n            <option name=\"EMULATED\" value=\"true\" />\r\n            <option name=\"WATCH_EXIT\" value=\"false\" />\r\n          </properties>\r\n          <option name=\"timeStamp\" value=\"43\" />\r\n        </line-breakpoint>\r\n      </breakpoints>\r\n    </breakpoint-manager>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 888e8839e5d3c2e876bf3e00a2c15db29586daf8)
++++ b/.idea/workspace.xml	(date 1714327342755)
+@@ -23,18 +23,18 @@
+   <component name="Git.Settings">
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+-  "lastFilter": {
+-    "state": "OPEN",
+-    "assignee": "duckydee"
++  <component name="GitHubPullRequestSearchHistory">{
++  &quot;lastFilter&quot;: {
++    &quot;state&quot;: &quot;OPEN&quot;,
++    &quot;assignee&quot;: &quot;duckydee&quot;
+   }
+-}]]></component>
+-  <component name="GithubPullRequestsUISettings"><![CDATA[{
+-  "selectedUrlAndAccountId": {
+-    "url": "https://github.com/duckydee/Lab8.git",
+-    "accountId": "957e6050-d2b6-4279-a138-901dec1ec70c"
++}</component>
++  <component name="GithubPullRequestsUISettings">{
++  &quot;selectedUrlAndAccountId&quot;: {
++    &quot;url&quot;: &quot;https://github.com/duckydee/Lab8.git&quot;,
++    &quot;accountId&quot;: &quot;957e6050-d2b6-4279-a138-901dec1ec70c&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="ProjectColorInfo">{
+   &quot;associatedIndex&quot;: 3
+ }</component>
+@@ -44,19 +44,19 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "Application.Main.executor": "Run",
+-    "RunOnceActivity.OpenProjectViewOnStart": "true",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "git-widget-placeholder": "main",
+-    "kotlin-language-version-configured": "true",
+-    "last_opened_file_path": "C:/Users/dee garrin/Downloads/bridges-java-3.4.2.jar",
+-    "project.structure.last.edited": "Modules",
+-    "project.structure.proportion": "0.0",
+-    "project.structure.side.proportion": "0.0"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
++    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
++    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++    &quot;last_opened_file_path&quot;: &quot;C:/Users/dee garrin/Downloads/bridges-java-3.4.2.jar&quot;,
++    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
++    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
++    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RecentsManager">
+     <key name="MoveFile.RECENT_KEYS">
+       <recent name="$PROJECT_DIR$/src" />
+@@ -117,8 +117,27 @@
+       <option name="project" value="LOCAL" />
+       <updated>1714002411238</updated>
+     </task>
+-    <option name="localTasksCounter" value="5" />
++    <task id="LOCAL-00005" summary="Working on displaying the paths">
++      <option name="closed" value="true" />
++      <created>1714004733045</created>
++      <option name="number" value="00005" />
++      <option name="presentableId" value="LOCAL-00005" />
++      <option name="project" value="LOCAL" />
++      <updated>1714004733045</updated>
++    </task>
++    <option name="localTasksCounter" value="6" />
+     <servers />
++  </component>
++  <component name="Vcs.Log.Tabs.Properties">
++    <option name="TAB_STATES">
++      <map>
++        <entry key="MAIN">
++          <value>
++            <State />
++          </value>
++        </entry>
++      </map>
++    </option>
+   </component>
+   <component name="VcsManagerConfiguration">
+     <MESSAGE value="Initial Commit" />
+@@ -132,29 +151,19 @@
+       <breakpoints>
+         <line-breakpoint enabled="true" type="java-line">
+           <url>file://$PROJECT_DIR$/src/Main.java</url>
+-          <line>163</line>
++          <line>147</line>
+           <option name="timeStamp" value="21" />
+         </line-breakpoint>
+         <line-breakpoint enabled="true" type="java-line">
+           <url>file://$PROJECT_DIR$/src/Main.java</url>
+-          <line>20</line>
+-          <option name="timeStamp" value="44" />
+-        </line-breakpoint>
+-        <line-breakpoint enabled="true" type="java-line">
+-          <url>file://$PROJECT_DIR$/src/Main.java</url>
+-          <line>141</line>
++          <line>125</line>
+           <option name="timeStamp" value="48" />
+         </line-breakpoint>
+         <line-breakpoint enabled="true" type="java-line">
+           <url>file://$PROJECT_DIR$/src/Main.java</url>
+-          <line>153</line>
++          <line>137</line>
+           <option name="timeStamp" value="49" />
+         </line-breakpoint>
+-        <line-breakpoint enabled="true" type="java-line">
+-          <url>file://$PROJECT_DIR$/src/Main.java</url>
+-          <line>32</line>
+-          <option name="timeStamp" value="50" />
+-        </line-breakpoint>
+         <breakpoint enabled="true" type="java-exception">
+           <properties class="java.lang.NullPointerException" package="java.lang" />
+           <option name="timeStamp" value="31" />
+@@ -163,15 +172,6 @@
+           <properties class="java.util.NoSuchElementException" package="java.util" />
+           <option name="timeStamp" value="38" />
+         </breakpoint>
+-        <line-breakpoint enabled="true" type="java-method">
+-          <url>file://$PROJECT_DIR$/src/Main.java</url>
+-          <line>19</line>
+-          <properties class="Main" method="findIntermediatePoints">
+-            <option name="EMULATED" value="true" />
+-            <option name="WATCH_EXIT" value="false" />
+-          </properties>
+-          <option name="timeStamp" value="43" />
+-        </line-breakpoint>
+       </breakpoints>
+     </breakpoint-manager>
+   </component>
